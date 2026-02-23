@@ -14,4 +14,7 @@ add_executable(converter
 )
 
 # player: 二元資料 → 動畫顯示
-add_executable(player src/player.cpp)
+add_executable(player
+    src/player.cpp
+    src/utils/player_utils.cpp
+)
