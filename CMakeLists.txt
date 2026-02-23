@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include_directories(include)
 
 # converter: 圖片 → 二元資料
-add_executable(converter src/converter.cpp)
+add_executable(converter src/converter.cpp src/utils.cpp)
 
 # player: 二元資料 → 動畫顯示
 add_executable(player src/player.cpp)
