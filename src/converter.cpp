@@ -56,6 +56,7 @@ int main(int argc, char* argv[]) {
     fwrite(&frame_count,  4, 1, out);
 
     // 依序轉換每張圖
+    printf("\n");
     int ok_count = 0;
     for (size_t i = 0; i < files.size(); i++) {
         std::vector<uint8_t> bits;
@@ -65,9 +66,10 @@ int main(int argc, char* argv[]) {
         }
         fwrite(bits.data(), 1, bits.size(), out);
         ok_count++;
-
-        if ((i + 1) % 100 == 0 || i + 1 == files.size())
-            printf("  已處理 %d / %zu\r", ok_count, files.size());
+        if ((i + 1) % 1 == 0 || i + 1 == files.size()){
+            printf("\r\033[2K  已處理 %d / %zu", ok_count, files.size());
+            fflush(stdout);
+        }
     }
     printf("\n");
 
