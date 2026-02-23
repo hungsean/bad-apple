@@ -53,13 +53,29 @@ static void render_frame(const uint8_t* bits,
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        fprintf(stderr, "Usage: player <binary_file> [fps]\n");
+        fprintf(stderr, "Usage: player <binary_file> [fps] [-d|--debug]\n");
         return 1;
     }
 
-    const std::string binary_file = argv[1];
-    int fps = (argc >= 3) ? atoi(argv[2]) : FPS;
-    if (fps <= 0) fps = FPS;
+    bool debug = false;
+    std::string binary_file;
+    int fps = FPS;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0) {
+            debug = true;
+        } else if (binary_file.empty()) {
+            binary_file = argv[i];
+        } else {
+            int v = atoi(argv[i]);
+            if (v > 0) fps = v;
+        }
+    }
+
+    if (binary_file.empty()) {
+        fprintf(stderr, "Usage: player <binary_file> [fps] [-d|--debug]\n");
+        return 1;
+    }
 
     FILE* fp = fopen(binary_file.c_str(), "rb");
     if (!fp) {
@@ -76,15 +92,16 @@ int main(int argc, char* argv[]) {
         fclose(fp);
         return 1;
     }
-    fprintf(stderr, "解析度: %u x %u, 共 %u 幀, %d fps\n",
-            src_w, src_h, frame_count, fps);
+    if (debug)
+        fprintf(stderr, "解析度: %u x %u, 共 %u 幀, %d fps\n",
+                src_w, src_h, frame_count, fps);
 
     int bytes_per_frame = ((int)(src_w * src_h) + 7) / 8;
     std::vector<uint8_t> frame_buf(bytes_per_frame);
 
     // 計算顯示大小（維持 4:3，半格字元讓高度 /2）
     int term_cols, term_rows;
-    get_term_size(term_cols, term_rows);
+    get_term_size(term_cols, term_rows, debug);
 
     // 寬度以 term_cols 為上限；字元高寬比約 2:1，故 pixel_h = char_rows * 2
     // src_w/src_h = dst_cols / (dst_rows * 2)  => dst_rows = dst_cols * src_h / (src_w * 2)
@@ -95,7 +112,8 @@ int main(int argc, char* argv[]) {
         dst_cols = dst_rows * 2 * (int)src_w / (int)src_h;
     }
 
-    fprintf(stderr, "顯示大小: %d cols x %d rows（字元）\n", dst_cols, dst_rows);
+    if (debug)
+        fprintf(stderr, "顯示大小: %d cols x %d rows（字元）\n", dst_cols, dst_rows);
 
     // 清除畫面、隱藏 cursor
     printf("\033[2J\033[?25l");
@@ -118,6 +136,12 @@ int main(int argc, char* argv[]) {
         fflush(stdout);
 
         auto elapsed = std::chrono::steady_clock::now() - t0;
+        if (debug) {
+            auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+            fprintf(stderr, "\r\033[2K幀 %u/%u  耗時 %ldµs  目標 %ldµs",
+                    i + 1, frame_count, (long)elapsed_us,
+                    (long)frame_duration.count());
+        }
         if (elapsed < frame_duration)
             std::this_thread::sleep_for(frame_duration - elapsed);
     }

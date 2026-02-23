@@ -3,3 +3,4 @@ output/
 asset/
 .DS_Store
 .vscode
+.cache/
