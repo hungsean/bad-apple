@@ -137,10 +137,10 @@ int main(int argc, char* argv[]) {
 
         auto elapsed = std::chrono::steady_clock::now() - t0;
         if (debug) {
-            auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-            fprintf(stderr, "\r\033[2K幀 %u/%u  耗時 %ldµs  目標 %ldµs",
-                    i + 1, frame_count, (long)elapsed_us,
-                    (long)frame_duration.count());
+            double elapsed_ms = std::chrono::duration<double, std::milli>(elapsed).count();
+            double actual_fps = elapsed_ms > 0.0 ? 1000.0 / elapsed_ms : 0.0;
+            fprintf(stderr, "\r\033[2K幀 %u/%u  耗時 %.3fms  %.1f fps",
+                    i + 1, frame_count, elapsed_ms, actual_fps);
         }
         if (elapsed < frame_duration)
             std::this_thread::sleep_for(frame_duration - elapsed);
