@@ -122,9 +122,13 @@ int main(int argc, char* argv[]) {
     std::string render_buf;
     auto frame_duration = std::chrono::microseconds(1000000 / fps);
     auto play_start = std::chrono::steady_clock::now();
+    auto prev_frame_start = play_start;
 
     for (uint32_t i = 0; i < frame_count; i++) {
         auto t0 = std::chrono::steady_clock::now();
+
+        double interval_ms = std::chrono::duration<double, std::milli>(t0 - prev_frame_start).count();
+        double actual_fps = (i > 0 && interval_ms > 0.0) ? 1000.0 / interval_ms : 0.0;
 
         if (fread(frame_buf.data(), 1, bytes_per_frame, fp) != (size_t)bytes_per_frame) {
             fprintf(stderr, "\n幀 %u 讀取失敗\n", i);
@@ -138,15 +142,10 @@ int main(int argc, char* argv[]) {
 
         auto deadline = play_start + (i + 1) * frame_duration;
         if (debug) {
-            auto elapsed = std::chrono::steady_clock::now() - t0;
-            double elapsed_ms = std::chrono::duration<double, std::milli>(elapsed).count();
-            auto remaining = deadline - std::chrono::steady_clock::now();
-            double remaining_ms = std::chrono::duration<double, std::milli>(remaining).count();
-            double actual_fps = (elapsed_ms + remaining_ms) > 0.0
-                                ? 1000.0 / (elapsed_ms + remaining_ms) : 0.0;
-            fprintf(stderr, "\r\033[2K幀 %u/%u  耗時 %.3fms  剩餘 %.3fms  %.1f fps",
-                    i + 1, frame_count, elapsed_ms, remaining_ms, actual_fps);
+            fprintf(stderr, "\r\033[2K幀 %u/%u  幀時間 %.2fms  %.1f fps",
+                    i + 1, frame_count, interval_ms, actual_fps);
         }
+        prev_frame_start = t0;
         std::this_thread::sleep_until(deadline);
     }
 
